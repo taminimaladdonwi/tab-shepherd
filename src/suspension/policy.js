@@ -7,6 +7,17 @@ import { getGroup } from '../groups/manager.js';
 import { enqueue, isQueued } from './queue.js';
 
 /**
+ * Check if a group has suspension disabled
+ * @param {string|null} groupId
+ * @returns {boolean}
+ */
+function isGroupSuspensionDisabled(groupId) {
+  if (!groupId) return false;
+  const group = getGroup(groupId);
+  return !!(group && group.suspensionDisabled);
+}
+
+/**
  * Evaluate all idle tabs and enqueue those that meet suspension criteria
  * @returns {number} number of tabs newly enqueued
  */
@@ -17,12 +28,7 @@ export function evaluateAndEnqueue() {
 
   for (const { tabId, groupId } of idleTabs) {
     if (isQueued(tabId)) continue;
-
-    // Skip if group has suspension disabled
-    if (groupId) {
-      const group = getGroup(groupId);
-      if (group && group.suspensionDisabled) continue;
-    }
+    if (isGroupSuspensionDisabled(groupId)) continue;
 
     // URL-level whitelist check happens in processor, but do a quick group check here
     enqueue(tabId, groupId || null, 'inactivity');
@@ -42,9 +48,6 @@ export function evaluateAndEnqueue() {
 export function shouldSuspend(tabId, url, groupId) {
   if (isWhitelisted(url)) return false;
   if (isQueued(tabId)) return false;
-  if (groupId) {
-    const group = getGroup(groupId);
-    if (group && group.suspensionDisabled) return false;
-  }
+  if (isGroupSuspensionDisabled(groupId)) return false;
   return true;
 }
