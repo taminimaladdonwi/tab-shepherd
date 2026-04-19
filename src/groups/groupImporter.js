@@ -61,9 +61,17 @@ function importAllGroups(serialized) {
     return [];
   }
 
-  return items
-    .map(item => importGroup(JSON.stringify(item)))
-    .filter(Boolean);
+  const results = [];
+  for (const item of items) {
+    const group = importGroup(JSON.stringify(item));
+    if (group) {
+      results.push(group);
+    } else {
+      // Collect errors from the inner importGroup call before clearImportErrors resets them
+      importErrors.push(...getImportErrors());
+    }
+  }
+  return results;
 }
 
 export { importGroup, importAllGroups, getImportErrors, clearImportErrors };
