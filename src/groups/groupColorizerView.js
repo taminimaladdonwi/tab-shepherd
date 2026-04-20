@@ -1,38 +1,41 @@
-const { getColor, getGroupsByColor, getValidColors } = require('./groupColorizer');
-const { getAllGroups } = require('./manager');
+import { getAllGroups } from './manager.js';
+import { getColor } from './groupColorizer.js';
 
-function getColorSummary() {
+/**
+ * Returns a summary of color assignments for all groups.
+ * @returns {Array<{groupId: string, name: string, color: string|null}>}
+ */
+export function getColorSummary() {
   const groups = getAllGroups();
-  const summary = {};
+  return groups.map(group => ({
+    groupId: group.id,
+    name: group.name,
+    color: getColor(group.id) || null
+  }));
+}
+
+/**
+ * Returns a distribution map of color -> count of groups using that color.
+ * @returns {Record<string, number>}
+ */
+export function getColorDistribution() {
+  const groups = getAllGroups();
+  const distribution = {};
 
   for (const group of groups) {
     const color = getColor(group.id);
-    summary[group.id] = {
-      name: group.name,
-      color: color || null
-    };
-  }
-
-  return summary;
-}
-
-function getColorDistribution() {
-  const colors = getValidColors();
-  const distribution = {};
-
-  for (const color of colors) {
-    const groups = getGroupsByColor(color);
-    if (groups.length > 0) {
-      distribution[color] = groups.length;
-    }
+    if (!color) continue;
+    distribution[color] = (distribution[color] || 0) + 1;
   }
 
   return distribution;
 }
 
-function getUncoloredGroups() {
+/**
+ * Returns all groups that do not have a color assigned.
+ * @returns {Array<{id: string, name: string}>}
+ */
+export function getUncoloredGroups() {
   const groups = getAllGroups();
   return groups.filter(group => !getColor(group.id));
 }
-
-module.exports = { getColorSummary, getColorDistribution, getUncoloredGroups };
