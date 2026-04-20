@@ -61,3 +61,14 @@ export function getGroupRestoreSummary(groupId) {
     : null;
   return { groupId, totalRestores: restores.length, lastRestoredAt };
 }
+
+/**
+ * Returns the number of restores that occurred within the given time window
+ * (in milliseconds) relative to now.
+ * @param {number} windowMs - The time window in milliseconds (e.g. 60000 for last minute).
+ * @returns {number}
+ */
+export function getRestoreCountInWindow(windowMs) {
+  const cutoff = Date.now() - windowMs;
+  return getRestoreHistory().filter(entry => entry.restoredAt >= cutoff).length;
+}
