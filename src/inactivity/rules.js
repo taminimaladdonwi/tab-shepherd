@@ -9,6 +9,14 @@ function addRule(rule) {
   if (!rule.id || !rule.matchPattern || !rule.inactiveThresholdMs) {
     throw new Error('Rule must have id, matchPattern, and inactiveThresholdMs');
   }
+  if (typeof rule.inactiveThresholdMs !== 'number' || rule.inactiveThresholdMs <= 0) {
+    throw new Error('inactiveThresholdMs must be a positive number');
+  }
+  try {
+    new RegExp(rule.matchPattern);
+  } catch (e) {
+    throw new Error(`Invalid matchPattern: ${e.message}`);
+  }
   const existing = rules.findIndex(r => r.id === rule.id);
   if (existing !== -1) {
     rules[existing] = rule;
