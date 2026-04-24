@@ -48,6 +48,15 @@ export function getRestoresByGroup(groupId) {
 }
 
 /**
+ * Returns restore history filtered by tabId.
+ * @param {number} tabId
+ * @returns {object[]}
+ */
+export function getRestoresByTab(tabId) {
+  return history.filter((entry) => entry.tabId === tabId);
+}
+
+/**
  * Clears the restore history.
  */
 export function clearRestoreHistory() {
