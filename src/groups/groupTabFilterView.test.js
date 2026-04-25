@@ -62,3 +62,16 @@ test('getMatchingTabTitles falls back to url when title missing', () => {
   const titles = getMatchingTabTitles('g2', {});
   expect(titles[0]).toBe('https://example.com');
 });
+
+test('getMatchingTabTitles returns empty array for unknown group', () => {
+  const titles = getMatchingTabTitles('nonexistent', { url: 'github' });
+  expect(titles).toEqual([]);
+});
+
+test('getFilterResultSummary excludes suspended tabs from matched count', () => {
+  isSuspended.mockImplementation((tab) => tab.id === 1);
+  const summary = getFilterResultSummary('g1', { url: 'github' });
+  // Tab id=1 (Tab Shepherd) matches url filter but is suspended, so only id=2 counts
+  expect(summary.matchedCount).toBe(1);
+  expect(summary.totalTabs).toBe(3);
+});
