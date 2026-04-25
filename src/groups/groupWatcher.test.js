@@ -33,6 +33,13 @@ describe('groupWatcher', () => {
     expect(getWatchers()).toHaveLength(0);
   });
 
+  test('unwatchGroup is a no-op for unknown watcherId', () => {
+    watchGroup('g1', { minTabs: 1 });
+    // Should not throw and should leave existing watchers intact
+    expect(() => unwatchGroup('nonexistent-id')).not.toThrow();
+    expect(getWatchers()).toHaveLength(1);
+  });
+
   test('evaluateWatchers triggers onChange when minTabs breached', () => {
     createGroup('g-watch', 'Watch Group');
     const callback = jest.fn();
