@@ -59,3 +59,17 @@ export function getDomainBreakdown(groupId) {
   }
   return breakdown;
 }
+
+/**
+ * Get the top N domains by tab count in a group.
+ * @param {string} groupId
+ * @param {number} [limit=5] - Maximum number of domains to return
+ * @returns {{ domain: string, count: number }[]} Sorted descending by count
+ */
+export function getTopDomains(groupId, limit = 5) {
+  const breakdown = getDomainBreakdown(groupId);
+  return Object.entries(breakdown)
+    .map(([domain, count]) => ({ domain, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
