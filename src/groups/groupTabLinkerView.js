@@ -1,56 +1,76 @@
+import { getLinks, getAllLinks } from './groupTabLinker.js';
+
 /**
- * groupTabLinkerView.js
- * View utilities for summarizing and querying tab link data.
+ * Returns a high-level summary of all tab links across groups.
  */
+export function getLinkSummary() {
+  const all = getAllLinks();
+  const byRelation = {};
+  let totalLinks = 0;
+  const groups = new Set();
 
-const { getAllLinks, getLinks, getSupportedRelations } = require('./groupTabLinker');
+  for (const entry of all) {
+    totalLinks++;
+    const rel = entry.relation || 'unknown';
+    byRelation[rel] = (byRelation[rel] || 0) + 1;
+    groups.add(entry.sourceGroup);
+    groups.add(entry.targetGroup);
+  }
 
-function getLinkSummary() {
-  const allLinks = getAllLinks();
-  const relationCounts = {};
-  for (const rel of getSupportedRelations()) {
-    relationCounts[rel] = 0;
-  }
-  for (const link of allLinks) {
-    if (relationCounts[link.relation] !== undefined) {
-      relationCounts[link.relation]++;
-    }
-  }
   return {
-    totalLinks: allLinks.length,
-    byRelation: relationCounts
+    totalLinks,
+    groupCount: groups.size,
+    byRelation
   };
 }
 
-function getMostLinkedTab(groupId, tabs) {
-  if (!tabs || tabs.length === 0) return null;
-  let maxCount = -1;
-  let mostLinked = null;
-  for (const tab of tabs) {
-    const count = getLinks(groupId, tab.id).length;
-    if (count > maxCount) {
-      maxCount = count;
-      mostLinked = { tab, linkCount: count };
+/**
+ * Returns the tab (groupId + tabId) with the highest number of links.
+ * Returns null if no links exist.
+ */
+export function getMostLinkedTab() {
+  const all = getAllLinks();
+  if (all.length === 0) return null;
+
+  const counts = {};
+  for (const entry of all) {
+    const srcKey = `${entry.sourceGroup}::${entry.sourceTab}`;
+    const tgtKey = `${entry.targetGroup}::${entry.targetTab}`;
+    counts[srcKey] = (counts[srcKey] || 0) + 1;
+    counts[tgtKey] = (counts[tgtKey] || 0) + 1;
+  }
+
+  let topKey = null;
+  let topCount = 0;
+  for (const [key, count] of Object.entries(counts)) {
+    if (count > topCount) {
+      topCount = count;
+      topKey = key;
     }
   }
-  return mostLinked;
+
+  if (!topKey) return null;
+  const [groupId, tabIdStr] = topKey.split('::');
+  return { groupId, tabId: Number(tabIdStr), linkCount: topCount };
 }
 
-function getLinkedTabIds(groupId, tabId) {
-  return getLinks(groupId, tabId).map(l => ({
-    groupId: l.toGroupId,
-    tabId: l.toTabId,
-    relation: l.relation
-  }));
+/**
+ * Returns all tab IDs linked to a specific tab within or across groups.
+ */
+export function getLinkedTabIds(groupId, tabId) {
+  const links = getLinks(groupId, tabId);
+  return links.map(link =>
+    link.sourceGroup === groupId && link.sourceTab === tabId
+      ? link.targetTab
+      : link.sourceTab
+  );
 }
 
-function getCrossGroupLinks() {
-  return getAllLinks().filter(l => l.fromGroupId !== l.toGroupId);
+/**
+ * Returns all links that connect tabs in different groups.
+ */
+export function getCrossGroupLinks() {
+  return getAllLinks().filter(
+    entry => entry.sourceGroup !== entry.targetGroup
+  );
 }
-
-module.exports = {
-  getLinkSummary,
-  getMostLinkedTab,
-  getLinkedTabIds,
-  getCrossGroupLinks
-};
