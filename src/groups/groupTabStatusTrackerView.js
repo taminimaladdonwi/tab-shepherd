@@ -1,53 +1,68 @@
+import { getGroupStatuses } from './groupTabStatusTracker.js';
+
 /**
- * groupTabStatusTrackerView.js
- * View helpers for summarizing and querying tab status data across groups.
+ * Returns a summary of tab statuses for a given group.
+ * @param {string} groupId
+ * @returns {{ groupId: string, total: number, byStatus: Record<string, number> }}
  */
-
-const { getStatusesForGroup, getTabsByStatus, getStatusCounts, VALID_STATUSES } = require('./groupTabStatusTracker');
-const { getAllGroups } = require('./manager');
-
-function getStatusSummary(groupId) {
-  const counts = getStatusCounts(groupId);
-  const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
-  return { groupId, total, counts };
+export function getStatusSummary(groupId) {
+  const statuses = getGroupStatuses(groupId);
+  const byStatus = {};
+  for (const status of Object.values(statuses)) {
+    byStatus[status] = (byStatus[status] || 0) + 1;
+  }
+  return { groupId, total: Object.keys(statuses).length, byStatus };
 }
 
-function getGroupsWithStatus(status) {
-  const groups = getAllGroups();
-  return groups
-    .map(g => ({ groupId: g.id, tabs: getTabsByStatus(g.id, status) }))
-    .filter(entry => entry.tabs.length > 0);
-}
-
-function getMostSuspendedGroup() {
-  const groups = getAllGroups();
-  let best = null;
-  let bestCount = -1;
-  for (const g of groups) {
-    const tabs = getTabsByStatus(g.id, 'suspended');
-    if (tabs.length > bestCount) {
-      bestCount = tabs.length;
-      best = { groupId: g.id, count: tabs.length };
+/**
+ * Returns a list of group IDs that have at least one tab with the given status.
+ * @param {string} status
+ * @returns {string[]}
+ */
+export function getGroupsWithStatus(status) {
+  // We need to inspect all known groups; groupTabStatusTracker exposes getAllStatuses
+  const { getAllStatuses } = require('./groupTabStatusTracker.js');
+  const all = getAllStatuses();
+  const result = [];
+  for (const [groupId, tabMap] of Object.entries(all)) {
+    if (Object.values(tabMap).includes(status)) {
+      result.push(groupId);
     }
   }
-  return best;
+  return result;
 }
 
-function getStatusDistribution() {
-  const groups = getAllGroups();
-  const distribution = Object.fromEntries(VALID_STATUSES.map(s => [s, 0]));
-  for (const g of groups) {
-    const counts = getStatusCounts(g.id);
-    for (const status of VALID_STATUSES) {
-      distribution[status] += counts[status] || 0;
+/**
+ * Returns the group ID with the highest number of suspended tabs, or null.
+ * @returns {string|null}
+ */
+export function getMostSuspendedGroup() {
+  const { getAllStatuses } = require('./groupTabStatusTracker.js');
+  const all = getAllStatuses();
+  let topGroup = null;
+  let topCount = 0;
+  for (const [groupId, tabMap] of Object.entries(all)) {
+    const count = Object.values(tabMap).filter(s => s === 'suspended').length;
+    if (count > topCount) {
+      topCount = count;
+      topGroup = groupId;
     }
   }
-  return distribution;
+  return topGroup;
 }
 
-module.exports = {
-  getStatusSummary,
-  getGroupsWithStatus,
-  getMostSuspendedGroup,
-  getStatusDistribution
-};
+/**
+ * Returns the total count of each status value across all groups.
+ * @returns {Record<string, number>}
+ */
+export function getStatusDistribution() {
+  const { getAllStatuses } = require('./groupTabStatusTracker.js');
+  const all = getAllStatuses();
+  const dist = {};
+  for (const tabMap of Object.values(all)) {
+    for (const status of Object.values(tabMap)) {
+      dist[status] = (dist[status] || 0) + 1;
+    }
+  }
+  return dist;
+}
