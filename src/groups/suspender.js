@@ -55,3 +55,15 @@ export async function restoreTab(tabId) {
     return { tabId, restored: false, reason: err.message };
   }
 }
+
+/**
+ * Restores all suspended tabs in a group back to their original URLs.
+ * @param {string} groupId - The ID of the group to restore.
+ * @returns {Promise<{groupId: string, results: Array}>}
+ */
+export async function restoreGroup(groupId) {
+  const group = getGroup(groupId);
+  if (!group) throw new Error(`Group ${groupId} not found`);
+  const results = await Promise.all(group.tabIds.map(tabId => restoreTab(tabId)));
+  return { groupId, results };
+}
