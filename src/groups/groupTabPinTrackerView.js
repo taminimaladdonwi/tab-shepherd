@@ -40,10 +40,27 @@ function getPinReasonDistribution() {
   return dist;
 }
 
+/**
+ * Returns a summary of pinned tab counts for each group in the provided list.
+ * Groups with no pinned tabs are included with a count of 0.
+ *
+ * @param {string[]} groups - Array of group IDs to summarize.
+ * @returns {{ groupId: string, pinnedCount: number }[]} Sorted descending by pinnedCount.
+ */
+function getPinCountsByGroup(groups) {
+  return groups
+    .map(groupId => ({
+      groupId,
+      pinnedCount: getPinnedTabsInGroup(groupId).length
+    }))
+    .sort((a, b) => b.pinnedCount - a.pinnedCount);
+}
+
 module.exports = {
   getPinSummary,
   getMostPinnedGroup,
   getGroupsWithPinnedTabs,
   getUnpinnedGroups,
-  getPinReasonDistribution
+  getPinReasonDistribution,
+  getPinCountsByGroup
 };
